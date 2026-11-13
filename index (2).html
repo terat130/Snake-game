@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Snake Sosis</title>
+<style>
+:root{--bg:#f4f1ea;--card:#fff;--text:#1f2933;--muted:#6b7580;--line:#ddd6c8;--accent:#e74c3c;--btn:#e9e4d8;--board:#1e272e;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14181c;--card:#1e252b;--text:#eef1f4;--muted:#9aa5b1;--line:#333d46;--btn:#2b343c;--board:#0f1418}}
+:root[data-theme="dark"]{--bg:#14181c;--card:#1e252b;--text:#eef1f4;--muted:#9aa5b1;--line:#333d46;--btn:#2b343c;--board:#0f1418}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;min-height:100vh;display:flex;justify-content:center;padding:16px}
+.wrap{width:100%;max-width:500px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;text-align:center}
+h1{margin:0 0 4px;font-size:1.6rem}
+p.sub{margin:0 0 14px;color:var(--muted);font-size:.9rem}
+canvas{display:block;margin:0 auto;max-width:100%;height:auto}
+#prev{background:var(--board);border-radius:10px}
+h3{margin:16px 0 8px;font-size:.85rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+label.pick{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:.8rem;color:var(--muted)}
+input[type=color]{width:64px;height:44px;border:2px solid var(--line);border-radius:10px;padding:2px;background:var(--card);cursor:pointer}
+button{font:inherit;cursor:pointer;border:0;border-radius:10px;padding:8px 14px;background:var(--btn);color:var(--text)}
+.chip{color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.4);font-weight:600;font-size:.85rem}
+.opt{font-size:.85rem;padding:8px 10px;border:2px solid transparent}
+.opt.on{border-color:var(--accent);font-weight:700}
+.acc{margin-top:16px;text-align:left;display:flex;flex-direction:column;gap:8px}
+.item{border:1px solid var(--line);border-radius:12px;background:var(--bg);overflow:hidden}
+.item .head{display:flex;align-items:center;gap:10px;width:100%;background:transparent;border-radius:0;padding:12px 14px;text-align:left}
+.item .ic{font-size:1.2rem}
+.item .ttl{font-weight:700}
+.item .val{margin-left:auto;color:var(--muted);font-size:.85rem;display:flex;align-items:center;gap:4px;min-width:0;white-space:nowrap;overflow:hidden}
+.item .val i{display:inline-block;width:14px;height:14px;border-radius:50%;border:1px solid var(--line)}
+.item .chev{color:var(--muted);transition:transform .25s}
+.item.open .chev{transform:rotate(180deg)}
+.item.open .head{border-bottom:1px solid var(--line)}
+.panel{display:grid;grid-template-rows:0fr;transition:grid-template-rows .28s ease}
+.item.open .panel{grid-template-rows:1fr}
+.panel .in{overflow:hidden}
+.panel .body{padding:2px 14px 14px;text-align:center}
+@media (prefers-reduced-motion:reduce){.panel,.chev{transition:none}}
+.go{background:var(--accent);color:#fff;font-size:1.15rem;font-weight:700;padding:12px 32px;margin-top:20px}
+.bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-weight:700;gap:8px}
+.bar small{color:#d4a017;font-weight:600}
+#board{border-radius:10px;background:var(--board);touch-action:none;width:100%}
+.pad{display:grid;grid-template-columns:repeat(3,64px);grid-template-rows:repeat(2,52px);gap:6px;justify-content:center;margin-top:12px}
+.pad button{font-size:1.3rem;padding:0}
+.pad .u{grid-column:2;grid-row:1}.pad .l{grid-column:1;grid-row:2}.pad .d{grid-column:2;grid-row:2}.pad .r{grid-column:3;grid-row:2}
+.hint{color:var(--muted);font-size:.8rem;margin-top:10px}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<section id="menu" class="card">
+  <div style="text-align:right"><button class="muteBtn" title="Musik">🔊</button></div>
+  <h1>🌭 Snake Sosis 🌭</h1>
+  <p class="sub">Desain ularmu sendiri, lalu makan sebanyak-banyaknya!</p>
+  <canvas id="prev" width="320" height="70"></canvas>
+
+  <div class="acc">
+    <div class="item" id="acc-color">
+      <button class="head" aria-expanded="false" aria-controls="p-color"><span class="ic">🎨</span><span class="ttl">Warna</span><span class="val" id="v-color"></span><span class="chev">▾</span></button>
+      <div class="panel" id="p-color"><div class="in"><div class="body">
+        <h3>Palet ular</h3>
+        <div class="row" id="presets"></div>
+        <h3>Warna bebas</h3>
+        <div class="row">
+          <label class="pick"><input type="color" id="cHead" value="#27ae60">Kepala</label>
+          <label class="pick"><input type="color" id="cBody" value="#2ecc71">Badan</label>
+          <label class="pick"><input type="color" id="cSos" value="#c0392b">Sosis</label>
+        </div>
+      </div></div></div>
+    </div>
+
+    <div class="item" id="acc-face">
+      <button class="head" aria-expanded="false" aria-controls="p-face"><span class="ic">😎</span><span class="ttl">Ekspresi</span><span class="val" id="v-face"></span><span class="chev">▾</span></button>
+      <div class="panel" id="p-face"><div class="in"><div class="body">
+        <div class="row" id="faces"></div>
+      </div></div></div>
+    </div>
+
+    <div class="item" id="acc-food">
+      <button class="head" aria-expanded="false" aria-controls="p-food"><span class="ic">🍔</span><span class="ttl">Makanan</span><span class="val" id="v-food"></span><span class="chev">▾</span></button>
+      <div class="panel" id="p-food"><div class="in"><div class="body">
+        <div class="row" id="foods"></div>
+        <div id="sosWrap">
+          <h3>Jenis sosis</h3>
+          <div class="row" id="sosPresets"></div>
+        </div>
+      </div></div></div>
+    </div>
+  </div>
+
+  <button class="go" id="start">▶ MULAI MAIN</button>
+  <div class="hint">✨ Makanan berkilau (enchant) memberi +5 poin bonus!<br>Panah / WASD, geser layar, atau tombol arah. P = pause.</div>
+</section>
+
+<section id="game" class="card" hidden>
+  <div class="bar">
+    <span id="score">Skor: 0</span>
+    <small id="hi">Rekor: 0</small>
+    <span class="row"><button class="muteBtn" title="Musik">🔊</button><button id="pause">⏸</button><button id="toMenu">Menu</button></span>
+  </div>
+  <canvas id="board" width="480" height="480"></canvas>
+  <div class="pad">
+    <button class="u" data-d="0,-1">▲</button><button class="l" data-d="-1,0">◀</button>
+    <button class="d" data-d="0,1">▼</button><button class="r" data-d="1,0">▶</button>
+  </div>
+  <div class="hint">Enter / R = main lagi  •  Esc = menu</div>
+</section>
+
+</div>
+
+<script>
+const N = 20, C = 24, S = N * C;
+const $ = id => document.getElementById(id);
+const PRESETS = {Hijau:["#27ae60","#2ecc71"],Biru:["#2980b9","#3498db"],Ungu:["#8e44ad","#9b59b6"],Pink:["#e84393","#fd79a8"],Oranye:["#d35400","#e67e22"],Kuning:["#f39c12","#f1c40f"]};
+const SOS = {Klasik:"#c0392b",Bakar:"#a0522d",Pink:"#e17055",Keju:"#e1a95f"};
+const FACES = [["normal","😐","Normal"],["happy","😄","Senang"],["cool","😎","Keren"],["angry","😠","Marah"],["cute","🥰","Imut"],["sleepy","😴","Ngantuk"],["wow","😲","Kaget"]];
+const FOODS = [["sosis","🌭","Sosis"],["apel","🍎","Apel"],["burger","🍔","Burger"],["donat","🍩","Donat"],["pizza","🍕","Pizza"],["mix","🎲","Campur"]];
+const EMO = {sosis:"🌭", apel:"🍎", burger:"🍔", donat:"🍩", pizza:"🍕"};
+const KINDS = Object.keys(EMO);
+
+// pilihan ekspresi & makanan (disimpan di browser)
+const sel = {face:"normal", food:"sosis"};
+try {
+  const sv = JSON.parse(localStorage.getItem("sosisPref") || "{}");
+  if (FACES.some(f => f[0] === sv.face)) sel.face = sv.face;
+  if (FOODS.some(f => f[0] === sv.food)) sel.food = sv.food;
+} catch (e) {}
+function savePref(){ try { localStorage.setItem("sosisPref", JSON.stringify(sel)); } catch (e) {} }
+
+function shade(hex, f){
+  const n = parseInt(hex.slice(1), 16);
+  let r = n >> 16, g = (n >> 8) & 255, b = n & 255;
+  if (f <= 1){ r *= f; g *= f; b *= f; }
+  else { const k = f - 1; r += (255 - r) * k; g += (255 - g) * k; b += (255 - b) * k; }
+  return "#" + [r, g, b].map(v => Math.round(v).toString(16).padStart(2, "0")).join("");
+}
+
+// ---------- makanan
+function drawSausage(ctx, x, y, s, color){
+  const cy = y + s / 2, x1 = x + s * .28, x2 = x + s * .72;
+  ctx.lineCap = "round";
+  const line = (a, b, c, d, w, col) => { ctx.beginPath(); ctx.moveTo(a, b); ctx.lineTo(c, d); ctx.lineWidth = w; ctx.strokeStyle = col; ctx.stroke(); };
+  line(x1, cy, x2, cy, s * .56, shade(color, .6));
+  line(x1, cy, x2, cy, s * .44, color);
+  line(x1, cy - s * .1, x2, cy - s * .1, Math.max(2, s * .07), shade(color, 1.5));
+  ctx.lineCap = "butt";
+  for (const g of [.38, .5, .62]) line(x + s * g - s * .03, cy - s * .16, x + s * g + s * .03, cy + s * .16, 2, shade(color, .55));
+}
+
+function drawFood(ctx, x, y, s, kind, color){
+  if (kind === "sosis") return drawSausage(ctx, x, y, s, color);
+  const cx = x + s / 2, cy = y + s / 2;
+  const dot = (px, py, r, f) => { ctx.fillStyle = f; ctx.beginPath(); ctx.arc(px, py, r, 0, 7); ctx.fill(); };
+  const box = (px, py, w, h, r, f) => { ctx.fillStyle = f; ctx.beginPath(); ctx.roundRect(px, py, w, h, r); ctx.fill(); };
+  const ring = (r1, r2, f) => { ctx.fillStyle = f; ctx.beginPath(); ctx.arc(cx, cy, r1, 0, 7); ctx.moveTo(cx + r2, cy); ctx.arc(cx, cy, r2, 0, 7); ctx.fill("evenodd"); };
+  ctx.lineCap = "round";
+  if (kind === "apel"){
+    dot(cx - s * .1, cy + s * .08, s * .24, "#d63031");
+    dot(cx + s * .1, cy + s * .08, s * .24, "#d63031");
+    dot(cx - s * .14, cy + s * .02, s * .06, "rgba(255,255,255,.45)");
+    ctx.strokeStyle = "#6d4c41"; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(cx, cy - s * .12); ctx.lineTo(cx + s * .04, cy - s * .32); ctx.stroke();
+    ctx.fillStyle = "#2ecc71"; ctx.beginPath(); ctx.ellipse(cx + s * .17, cy - s * .27, s * .12, s * .06, -.5, 0, 7); ctx.fill();
+  } else if (kind === "burger"){
+    box(x + s * .14, y + s * .64, s * .72, s * .2, s * .08, "#c68642");
+    box(x + s * .1, y + s * .52, s * .8, s * .14, s * .06, "#5d4037");
+    box(x + s * .12, y + s * .44, s * .76, s * .1, s * .04, "#f9ca24");
+    box(x + s * .1, y + s * .36, s * .8, s * .1, s * .05, "#27ae60");
+    ctx.fillStyle = "#e0a458"; ctx.beginPath(); ctx.ellipse(cx, y + s * .38, s * .4, s * .26, 0, Math.PI, 2 * Math.PI); ctx.closePath(); ctx.fill();
+    for (const [a, b] of [[-.14, .24], [.02, .18], [.16, .25]]) dot(cx + s * a, y + s * b, Math.max(1, s * .03), "#fff7d6");
+  } else if (kind === "donat"){
+    ring(s * .38, s * .11, "#d98c4a");
+    ring(s * .32, s * .15, "#fd79a8");
+    const cols = ["#fff", "#74b9ff", "#ffeaa7", "#55efc4", "#fff", "#a29bfe"];
+    ctx.lineWidth = Math.max(1.5, s * .06);
+    cols.forEach((c, i) => {
+      const a = i * 1.05 + .3, px = cx + Math.cos(a) * s * .235, py = cy + Math.sin(a) * s * .235;
+      ctx.strokeStyle = c; ctx.beginPath(); ctx.moveTo(px - Math.sin(a) * s * .04, py + Math.cos(a) * s * .04); ctx.lineTo(px + Math.sin(a) * s * .04, py - Math.cos(a) * s * .04); ctx.stroke();
+    });
+  } else if (kind === "pizza"){
+    ctx.fillStyle = "#f6c453"; ctx.beginPath();
+    ctx.moveTo(cx, y + s * .92); ctx.lineTo(x + s * .1, y + s * .24); ctx.quadraticCurveTo(cx, y + s * .04, x + s * .9, y + s * .24); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = "#c8873a"; ctx.lineWidth = s * .1;
+    ctx.beginPath(); ctx.moveTo(x + s * .1, y + s * .24); ctx.quadraticCurveTo(cx, y + s * .04, x + s * .9, y + s * .24); ctx.stroke();
+    dot(cx - s * .14, y + s * .4, s * .075, "#c0392b");
+    dot(cx + s * .15, y + s * .4, s * .075, "#c0392b");
+    dot(cx, y + s * .6, s * .065, "#c0392b");
+  }
+  ctx.lineCap = "butt";
+}
+
+function drawStar(ctx, cx, cy, r, color){
+  ctx.fillStyle = color; ctx.beginPath();
+  ctx.moveTo(cx, cy - r);
+  ctx.quadraticCurveTo(cx, cy, cx + r, cy);
+  ctx.quadraticCurveTo(cx, cy, cx, cy + r);
+  ctx.quadraticCurveTo(cx, cy, cx - r, cy);
+  ctx.quadraticCurveTo(cx, cy, cx, cy - r);
+  ctx.fill();
+}
+
+// ---------- ular & ekspresi wajah
+function drawFace(ctx, x, y, s, dir, face){
+  const [dx, dy] = dir, cx = x + s / 2, cy = y + s / 2;
+  const P = (a, b) => [cx + (dx * a - dy * b) * s, cy + (dy * a + dx * b) * s];
+  const circ = (a, b, r, f) => { const [px, py] = P(a, b); ctx.fillStyle = f; ctx.beginPath(); ctx.arc(px, py, r * s, 0, 7); ctx.fill(); };
+  const curve = (p0, pc, p1, w, c) => { ctx.beginPath(); ctx.moveTo(p0[0], p0[1]); ctx.quadraticCurveTo(pc[0], pc[1], p1[0], p1[1]); ctx.lineWidth = w; ctx.strokeStyle = c || "#000"; ctx.lineCap = "round"; ctx.stroke(); };
+  const eye = b => { circ(.14, b, .165, "#fff"); circ(.18, b, .08, "#000"); };
+  const K = [-1, 1];
+  if (face === "happy"){
+    for (const k of K){ curve(P(.1, k * .2 - .08), P(.26, k * .2), P(.1, k * .2 + .08), 2.5); }
+    curve(P(-.1, -.14), P(-.28, 0), P(-.1, .14), 2.5);
+  } else if (face === "cool"){
+    ctx.fillStyle = "#111"; ctx.strokeStyle = "#111"; ctx.lineWidth = 3; ctx.lineJoin = "round";
+    for (const k of K){
+      const q = [P(.26, k * .04), P(.26, k * .34), P(.03, k * .34), P(.03, k * .04)];
+      ctx.beginPath(); ctx.moveTo(q[0][0], q[0][1]); for (let i = 1; i < 4; i++) ctx.lineTo(q[i][0], q[i][1]); ctx.closePath(); ctx.fill(); ctx.stroke();
+      curve(P(.2, k * .1), P(.2, k * .16), P(.2, k * .22), 1.5, "rgba(255,255,255,.55)");
+    }
+    ctx.lineJoin = "miter";
+    curve(P(-.12, -.12), P(-.2, 0), P(-.1, .15), 2.5);
+  } else if (face === "angry"){
+    for (const k of K) eye(k * .2);
+    for (const k of K) curve(P(.36, k * .34), P(.28, k * .22), P(.18, k * .06), 3, "#111");
+    curve(P(-.18, -.13), P(-.06, 0), P(-.18, .13), 2.5);
+  } else if (face === "cute"){
+    for (const k of K){
+      circ(.14, k * .2, .13, "#000");
+      circ(.2, k * .2 - k * .035, .05, "#fff");
+      circ(.1, k * .2 + k * .04, .025, "#fff");
+      circ(-.04, k * .38, .075, "rgba(255,105,135,.6)");
+    }
+    curve(P(-.1, -.07), P(-.2, 0), P(-.1, .07), 2);
+  } else if (face === "sleepy"){
+    for (const k of K) curve(P(.14, k * .2 - .09), P(.06, k * .2), P(.14, k * .2 + .09), 2.5);
+    circ(-.12, 0, .055, "#000");
+  } else if (face === "wow"){
+    for (const k of K){ circ(.14, k * .2, .18, "#fff"); circ(.14, k * .2, .065, "#000"); }
+    circ(-.12, 0, .095, "#000");
+  } else {
+    for (const k of K) eye(k * .2);
+  }
+}
+
+function drawSeg(ctx, x, y, s, color, head, dir, face){
+  const p = head ? 1 : 2;
+  ctx.fillStyle = color; ctx.strokeStyle = shade(color, .7); ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.roundRect(x + p, y + p, s - 2 * p, s - 2 * p, s * .22); ctx.fill(); ctx.stroke();
+  if (head) drawFace(ctx, x, y, s, dir, face || sel.face);
+}
+
+// ---------- pengaturan warna, ekspresi & makanan
+const col = {head:"#27ae60", body:"#2ecc71", sos:"#c0392b"};
+function drawPreview(){
+  const ctx = $("prev").getContext("2d");
+  ctx.clearRect(0, 0, 320, 70);
+  for (let i = 0; i < 5; i++) drawSeg(ctx, 15 + i * 36, 15, 40, col.body, false);
+  drawSeg(ctx, 15 + 5 * 36, 15, 40, col.head, true, [1, 0]);
+  if (sel.food === "mix") ["apel", "burger", "donat"].forEach((k, i) => drawFood(ctx, 243 + i * 25, 22, 26, k, col.sos));
+  else drawFood(ctx, 255, 8, 54, sel.food, col.sos);
+}
+function renderOpts(){
+  document.querySelectorAll("#faces .opt, #foods .opt").forEach(b => b.classList.toggle("on", sel[b.dataset.k] === b.dataset.id));
+  $("sosWrap").hidden = !(sel.food === "sosis" || sel.food === "mix");
+  const nm = (list, id) => { const f = list.find(x => x[0] === id); return `${f[1]} ${f[2]}`; };
+  $("v-face").textContent = nm(FACES, sel.face);
+  $("v-food").textContent = nm(FOODS, sel.food);
+  $("v-color").innerHTML = ["head", "body", "sos"].map(k => `<i style="background:${col[k]}"></i>`).join("");
+  drawPreview();
+}
+// akordeon: kategori tertutup dulu, buka satu per satu saat diklik
+document.querySelectorAll(".item .head").forEach(h => h.onclick = () => {
+  const item = h.parentElement, open = !item.classList.contains("open");
+  document.querySelectorAll(".item").forEach(i => { i.classList.remove("open"); i.querySelector(".head").setAttribute("aria-expanded", "false"); });
+  if (open){ item.classList.add("open"); h.setAttribute("aria-expanded", "true"); }
+});
+function buildOpts(boxId, list, key){
+  for (const [id, emo, name] of list){
+    const el = document.createElement("button"); el.className = "opt"; el.textContent = `${emo} ${name}`;
+    el.dataset.k = key; el.dataset.id = id;
+    el.onclick = () => { sel[key] = id; savePref(); renderOpts(); };
+    $(boxId).append(el);
+  }
+}
+function sync(){ $("cHead").value = col.head; $("cBody").value = col.body; $("cSos").value = col.sos; renderOpts(); }
+$("cHead").oninput = e => { col.head = e.target.value; renderOpts(); };
+$("cBody").oninput = e => { col.body = e.target.value; renderOpts(); };
+$("cSos").oninput = e => { col.sos = e.target.value; renderOpts(); };
+for (const [name, [h, b]] of Object.entries(PRESETS)){
+  const el = document.createElement("button"); el.className = "chip"; el.textContent = name; el.style.background = b;
+  el.onclick = () => { col.head = h; col.body = b; sync(); }; $("presets").append(el);
+}
+for (const [name, c] of Object.entries(SOS)){
+  const el = document.createElement("button"); el.className = "chip"; el.textContent = name; el.style.background = c;
+  el.onclick = () => { col.sos = c; sync(); }; $("sosPresets").append(el);
+}
+buildOpts("faces", FACES, "face");
+buildOpts("foods", FOODS, "food");
+
+// ---------- musik & suara (dibuat langsung dengan Web Audio, tanpa file)
+let ac = null, master = null, musicOn = true, musicRun = false, nextT = 0, mStep = 0, mTimer = null, curTrack = null;
+const F = n => 440 * Math.pow(2, (n - 69) / 12);
+const TRACKS = {
+  game:  {step: 60 / 132 / 2, lead: "square",   vol: 0.06,
+          mel: [72,0,76,0,79,76,72,0, 74,0,77,0,81,77,74,0, 76,0,79,0,83,79,76,0, 74,77,72,0,67,0,0,0],
+          roots: [48, 50, 52, 43]},
+  lobby: {step: 60 / 96 / 2, lead: "triangle", vol: 0.10,
+          mel: [76,0,0,72,74,0,72,0, 69,0,0,72,71,0,0,0, 72,0,0,69,71,0,72,0, 74,0,0,71,67,0,0,0],
+          roots: [48, 45, 53, 43]}
+};
+function note(f, t, d, type, v){
+  const o = ac.createOscillator(), g = ac.createGain();
+  o.type = type; o.frequency.value = f;
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(v, t + 0.01);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + d);
+  o.connect(g); g.connect(master); o.start(t); o.stop(t + d + 0.02);
+}
+function sched(){
+  const T = TRACKS[curTrack];
+  while (nextT < ac.currentTime + 0.25){
+    const i = mStep % 32, m = T.mel[i];
+    if (m) note(F(m), nextT, T.step * 1.8, T.lead, T.vol);
+    if (i % 2 === 0) note(F(T.roots[Math.floor(i / 8)]), nextT, T.step * 1.6, "triangle", 0.16);
+    nextT += T.step; mStep++;
+  }
+}
+function audioInit(){
+  try {
+    if (!ac){
+      const A = window.AudioContext || window.webkitAudioContext;
+      if (!A) return false;
+      ac = new A(); master = ac.createGain(); master.gain.value = 0.5; master.connect(ac.destination);
+    }
+    if (ac.state === "suspended") ac.resume();
+    return true;
+  } catch (e) { return false; }
+}
+function musicStart(track = "game"){
+  if (!musicOn) return;
+  if (musicRun && curTrack === track) return;
+  if (musicRun) musicStop();
+  if (!audioInit()) return;
+  curTrack = track; mStep = 0; musicRun = true;
+  nextT = ac.currentTime + 0.05; mTimer = setInterval(sched, 80);
+}
+function musicStop(){ musicRun = false; clearInterval(mTimer); }
+// Browser memblokir suara otomatis, jadi musik lobi mulai pada sentuhan/tombol pertama
+function lobbyStart(){ if (state === "menu") musicStart("lobby"); }
+["pointerdown", "keydown"].forEach(ev => document.addEventListener(ev, lobbyStart));
+function sfx(kind){
+  if (!musicOn || !audioInit()) return;
+  const t = ac.currentTime;
+  if (kind === "eat"){ note(F(84), t, .08, "square", .12); note(F(91), t + .07, .14, "square", .12); }
+  else if (kind === "magic") [84, 88, 91, 96, 100].forEach((n, i) => note(F(n), t + i * .06, .22, "sine", .14));
+  else [67, 64, 60, 55].forEach((n, i) => note(F(n), t + i * .16, .22, "sawtooth", .14));
+}
+
+// ---------- game
+const ctx = $("board").getContext("2d");
+let snake, dir, queue, food, foodKind = "sosis", score, delay, state = "menu", timer = null, hi = 0;
+let eaten = 0, foodT = 0, foodEnch = false, gt = 0, ts = 0, overlay = null, pops = [];
+const ENCH_CHANCE = 0.2, ENCH_BONUS = 5, FALL_MS = 650;
+try { hi = +localStorage.getItem("sosisHi") || 0; } catch (e) {}
+
+function reset(){
+  const m = N / 2;
+  snake = [[m, m], [m - 1, m], [m - 2, m]]; dir = [1, 0]; queue = [];
+  score = 0; eaten = 0; pops = []; overlay = null; delay = 140; state = "playing"; newFood();
+  labels(); clearTimeout(timer); tick(); musicStart("game");
+}
+function spawn(){
+  const free = [];
+  for (let x = 0; x < N; x++) for (let y = 0; y < N; y++) if (!snake.some(s => s[0] === x && s[1] === y)) free.push([x, y]);
+  return free.length ? free[Math.floor(Math.random() * free.length)] : null;
+}
+function newFood(){
+  food = spawn();
+  foodKind = sel.food === "mix" ? KINDS[Math.floor(Math.random() * KINDS.length)] : sel.food;
+  foodEnch = Math.random() < ENCH_CHANCE;
+  foodT = gt;
+}
+function labels(){
+  const em = sel.food === "mix" ? "🍽️" : EMO[sel.food];
+  $("score").textContent = `Skor: ${score}  ${em}×${eaten}`;
+  $("hi").textContent = `Rekor: ${hi}`;
+}
+
+function turn(d){
+  if (state !== "playing") return;
+  const last = queue.length ? queue[queue.length - 1] : dir;
+  if ((d[0] === -last[0] && d[1] === -last[1]) || (d[0] === last[0] && d[1] === last[1]) || queue.length >= 2) return;
+  queue.push(d);
+}
+
+function tick(){
+  if (state !== "playing") return;
+  if (queue.length) dir = queue.shift();
+  const h = [snake[0][0] + dir[0], snake[0][1] + dir[1]];
+  const eat = food && h[0] === food[0] && h[1] === food[1];
+  const body = eat ? snake : snake.slice(0, -1);
+  if (h[0] < 0 || h[1] < 0 || h[0] >= N || h[1] >= N || body.some(s => s[0] === h[0] && s[1] === h[1])) return end("GAME OVER");
+  snake.unshift(h);
+  if (eat){
+    const ench = foodEnch, gain = 10 + (ench ? ENCH_BONUS : 0);
+    score += gain; eaten++; delay = Math.max(60, delay - 3);
+    pops.push({x: food[0], y: food[1], t: gt, ench, text: `+${gain}` + (ench ? " ✨" : "")});
+    newFood(); sfx(ench ? "magic" : "eat");
+    if (!food) return end("KAMU MENANG! 🎉");
+  } else snake.pop();
+  labels();
+  timer = setTimeout(tick, delay);
+}
+function end(msg){
+  state = "over"; musicStop(); sfx("over");
+  if (score > hi){ hi = score; try { localStorage.setItem("sosisHi", hi); } catch (e) {} }
+  overlay = msg; labels();
+}
+function togglePause(){
+  if (state === "playing"){ state = "paused"; musicStop(); overlay = "PAUSE"; }
+  else if (state === "paused"){ state = "playing"; overlay = null; tick(); musicStart("game"); }
+}
+
+// makanan jatuh dari langit; makanan enchant berpendar dan punya bintang berputar
+function drawFoodAnim(){
+  const bx = food[0] * C, by = food[1] * C, cx = bx + C / 2, HIT = .78;
+  const p = Math.min(1, (gt - foodT) / FALL_MS);
+  let oy;
+  if (p < HIT){ const q = p / HIT; oy = -(1 - q * q) * (by + 2 * C); }
+  else { const q = (p - HIT) / (1 - HIT); oy = -Math.sin(q * Math.PI) * C * .22; }
+  if (p >= 1) oy = foodEnch ? Math.sin(ts / 300) * C * .03 : 0;
+  const y = by + oy, sp = Math.min(1, p / HIT);
+  // bayangan di tanah makin jelas saat makanan mendekat
+  ctx.fillStyle = `rgba(0,0,0,${.12 + .28 * sp})`;
+  ctx.beginPath(); ctx.ellipse(cx, by + C * .9, C * (.12 + .26 * sp), C * (.05 + .06 * sp), 0, 0, 7); ctx.fill();
+  if (p >= HIT && p < 1){
+    const q = (p - HIT) / (1 - HIT);
+    ctx.strokeStyle = `rgba(255,255,255,${.5 * (1 - q)})`; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.ellipse(cx, by + C * .9, C * (.25 + .45 * q), C * (.1 + .12 * q), 0, 0, 7); ctx.stroke();
+  }
+  if (p < HIT){
+    const g = ctx.createLinearGradient(0, y - C * 2.2, 0, y + C * .4), c = foodEnch ? "199,125,255" : "255,255,255";
+    g.addColorStop(0, `rgba(${c},0)`); g.addColorStop(1, `rgba(${c},.35)`);
+    ctx.fillStyle = g; ctx.fillRect(cx - C * .16, y - C * 2.2, C * .32, C * 2.6);
+  }
+  if (foodEnch){
+    const pulse = .75 + .25 * Math.sin(ts / 200);
+    const g2 = ctx.createRadialGradient(cx, y + C / 2, 0, cx, y + C / 2, C * .9 * pulse);
+    g2.addColorStop(0, "rgba(220,170,255,.65)"); g2.addColorStop(1, "rgba(160,90,255,0)");
+    ctx.fillStyle = g2; ctx.beginPath(); ctx.arc(cx, y + C / 2, C * .9, 0, 7); ctx.fill();
+    ctx.shadowColor = "#d6a4ff"; ctx.shadowBlur = 14;
+  }
+  drawFood(ctx, bx, y, C, foodKind, col.sos);
+  ctx.shadowBlur = 0; ctx.shadowColor = "transparent";
+  if (foodEnch){
+    for (let i = 0; i < 4; i++){
+      const a = ts / 500 + i * Math.PI / 2, r = C * (.52 + .06 * Math.sin(ts / 250 + i));
+      drawStar(ctx, cx + Math.cos(a) * r, y + C / 2 + Math.sin(a) * r, C * (.1 + .04 * Math.sin(ts / 150 + i * 2)), i % 2 ? "#fff6b0" : "#ffffff");
+    }
+  }
+}
+
+function draw(){
+  const msg = overlay;
+  ctx.clearRect(0, 0, S, S);
+  ctx.strokeStyle = "rgba(255,255,255,.06)"; ctx.lineWidth = 1; ctx.beginPath();
+  for (let i = 0; i <= N; i++){ ctx.moveTo(i * C, 0); ctx.lineTo(i * C, S); ctx.moveTo(0, i * C); ctx.lineTo(S, i * C); }
+  ctx.stroke();
+  if (food) drawFoodAnim();
+  for (let i = snake.length - 1; i > 0; i--) drawSeg(ctx, snake[i][0] * C, snake[i][1] * C, C, col.body, false);
+  drawSeg(ctx, snake[0][0] * C, snake[0][1] * C, C, col.head, true, dir);
+  pops = pops.filter(o => gt - o.t < 900);
+  for (const o of pops){
+    const q = (gt - o.t) / 900, px = o.x * C + C / 2, py = o.y * C + C * .3 - q * C * 1.3;
+    ctx.globalAlpha = 1 - q * q; ctx.textAlign = "center";
+    ctx.font = `bold ${o.ench ? 20 : 16}px system-ui,sans-serif`;
+    ctx.lineWidth = 3; ctx.strokeStyle = "rgba(0,0,0,.7)"; ctx.fillStyle = o.ench ? "#ffd86b" : "#fff";
+    ctx.strokeText(o.text, px, py); ctx.fillText(o.text, px, py);
+    ctx.globalAlpha = 1;
+  }
+  if (msg){
+    ctx.fillStyle = "rgba(0,0,0,.6)"; ctx.fillRect(0, S / 2 - 60, S, 120);
+    ctx.fillStyle = "#fff"; ctx.textAlign = "center";
+    ctx.font = "bold 34px system-ui,sans-serif"; ctx.fillText(msg, S / 2, S / 2 - 6);
+    ctx.font = "16px system-ui,sans-serif";
+    ctx.fillText(state === "over" ? "Ketuk layar / Enter untuk main lagi" : "Tekan P atau ⏸ untuk lanjut", S / 2, S / 2 + 28);
+  }
+}
+
+// ---------- layar & kontrol
+function showGame(){ $("menu").hidden = true; $("game").hidden = false; reset(); }
+function showMenu(){ clearTimeout(timer); musicStop(); state = "menu"; $("game").hidden = true; $("menu").hidden = false; musicStart("lobby"); }
+$("start").onclick = showGame;
+$("toMenu").onclick = showMenu;
+$("pause").onclick = togglePause;
+document.querySelectorAll(".muteBtn").forEach(b => b.onclick = () => {
+  musicOn = !musicOn;
+  document.querySelectorAll(".muteBtn").forEach(x => x.textContent = musicOn ? "🔊" : "🔇");
+  if (!musicOn) musicStop();
+  else if (state === "playing") musicStart("game");
+  else if (state === "menu") musicStart("lobby");
+});
+document.querySelectorAll(".pad button").forEach(b => b.onclick = () => turn(b.dataset.d.split(",").map(Number)));
+
+const KEYS = {ArrowUp:[0,-1], w:[0,-1], ArrowDown:[0,1], s:[0,1], ArrowLeft:[-1,0], a:[-1,0], ArrowRight:[1,0], d:[1,0]};
+document.addEventListener("keydown", e => {
+  const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+  if (state === "menu") return;
+  if (KEYS[k]){ e.preventDefault(); turn(KEYS[k]); }
+  else if (k === "p" || k === " "){ e.preventDefault(); togglePause(); }
+  else if ((k === "Enter" || k === "r") && state === "over") reset();
+  else if (k === "Escape") showMenu();
+});
+
+let t0 = null;
+$("board").addEventListener("touchstart", e => { t0 = [e.touches[0].clientX, e.touches[0].clientY]; }, {passive:true});
+$("board").addEventListener("touchend", e => {
+  if (!t0) return;
+  const dx = e.changedTouches[0].clientX - t0[0], dy = e.changedTouches[0].clientY - t0[1]; t0 = null;
+  if (Math.max(Math.abs(dx), Math.abs(dy)) < 24){ if (state === "over") reset(); return; }
+  turn(Math.abs(dx) > Math.abs(dy) ? [Math.sign(dx), 0] : [0, Math.sign(dy)]);
+});
+$("board").addEventListener("click", () => { if (state === "over") reset(); });
+
+renderOpts();
+
+// satu loop animasi untuk semua efek; waktu game (gt) berhenti saat pause
+let lastTs = 0;
+function frame(t){
+  const dt = Math.min(100, t - lastTs); lastTs = t; ts = t;
+  if (state === "playing") gt += dt;
+  if (state !== "menu" && snake) draw();
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
